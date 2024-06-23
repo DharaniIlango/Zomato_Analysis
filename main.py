@@ -4,6 +4,8 @@ import webbrowser
 import yfinance as yf
 import pandas as pd
 import altair as alt
+import plotly.express as px
+import plotly.graph_objects as go
 
 st.set_page_config(
     page_title="Zomato Sales Analysis",
@@ -27,6 +29,12 @@ df_food = pd.read_excel(io="zomato_data.xlsx",
                         sheet_name='food',
                         usecols='A:C',
                         nrows=371561)
+
+df_user = pd.read_excel(io="zomato_data.xlsx",
+                        engine='openpyxl',
+                        sheet_name='users',
+                        usecols='A:F',
+                        nrows=100001)
 
 #Menu1 - Overview Section
 if selected=='Overview':
@@ -73,45 +81,66 @@ if selected=='Overview':
     with column3:
         st.image("./Assets/zomato_icon.jpg")
         
-#Menu2 - Food Section
-if selected=='Food':
-    st.markdown("## Food 🍽️")
-    # Basic statistics
-    st.write("### Basic Statistics")
-    st.write(df_food.describe())
-
-    # Count of Veg vs Non-Veg items
-    st.write("### Count of Veg vs Non-Veg Items")
-    veg_count = df_food['veg_or_non_veg'].value_counts().reset_index()
-    veg_count.columns = ['Type', 'Count']
-    veg_chart = alt.Chart(veg_count).mark_bar().encode(
-        x='Type',
-        y='Count',
-        color='Type'
-    ).properties(
-        title='Count of Veg vs Non-Veg Items'
-    )
-    st.altair_chart(veg_chart, use_container_width=True)
-
-    # Unique items by type
-    st.write("### Unique Items by Type")
-    unique_items = df_food.groupby('veg_or_non_veg')['item'].nunique().reset_index()
-    unique_items.columns = ['Type', 'Unique Items']
-    unique_items_chart = alt.Chart(unique_items).mark_bar().encode(
-        x='Type',
-        y='Unique Items',
-        color='Type'
-    ).properties(
-        title='Unique Items by Type'
-    )
-    st.altair_chart(unique_items_chart, use_container_width=True)
-
-    # Pie chart of Veg vs Non-Veg items
-    st.write("### Pie Chart of Veg vs Non-Veg Items")
-    veg_pie_chart = alt.Chart(veg_count).mark_arc().encode(
-        theta=alt.Theta(field="Count", type="quantitative"),
-        color=alt.Color(field="Type", type="nominal")
-    ).properties(
-        title='Veg vs Non-Veg Items'
-    )
-    st.altair_chart(veg_pie_chart, use_container_width=True)
+# #Menu4 - User Section
+if selected =='User':
+    st.title("User 👤")
+    st.write(df_user)
+    user_select = st.selectbox("Choose the Field to be Analysed...",
+                               ("Age", "Gender", "Marital Status", "Occupational Status"))
+    if user_select == 'Age':
+        st.header("Age")
+        col1, col2, col3 = st.columns([2, 0.5, 2])
+        with col1:
+            age_distribution = df_user["Age"].value_counts().sort_index()
+            st.subheader("Age Distribution")
+        #barchart for age distribution
+            fig_age_bar = px.bar(
+                df_user,
+                x = age_distribution.index,
+                y = age_distribution.values,
+                labels = {'x': "Age", 'y': "No. of Users"},
+                hover_data = {'x': True, 'y': True},
+                width = 800,
+                height = 500,
+                color='rgb(203, 32, 45)'
+            )
+            fig_age_bar.update_layout(
+                xaxis_title = "Age",
+                yaxis_title = "No. of Users",
+                xaxis = dict(tickmode = 'linear')
+            )
+            st.plotly_chart(fig_age_bar)
+            
+        with col3:
+            st.subheader("Trend of Age across Users")
+            age_distribution.columns = ["Age", "Count"]
+            chart = alt.Chart(age_distribution.mark_line(color='rgb(203, 32, 45)').encode(
+                    x='Age',
+                    y='Count',
+                    tooltip = ["Age", "Count"]
+                ).properties(
+                    width=800,
+                    height=500
+                ).configure_title(
+                    fontSize = 16,
+                    anchor = 'middle'
+                ).interactive())
+            st.altair_chart(chart, use_container_width=True)
+        
+        fig = px.bar(
+            x = age_distribution.index,
+            y = age_distribution.values,
+            color = df_user['Gender'],
+            barmode = 'group',
+            labels = {'Age': 'Age Group', 'Count': 'Count of Users', 'Gender': 'Gender'},
+            title ='Age Distribution by Gender')
+        
+        fig.update_layout(
+        xaxis_title='Age Group',
+        yaxis_title='Count of Users',
+        legend_title='Gender',
+        width=800,
+        height=500
+        )
+        st.subheader("Age Distribution by Gender")
+        st.plotly_chart(fig)
