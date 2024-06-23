@@ -95,6 +95,7 @@ if selected =='User':
             st.subheader("Age Distribution")
         #barchart for age distribution
             fig_age_bar = px.bar(
+                df_user,
                 x = age_distribution.index,
                 y = age_distribution.values,
                 labels = {'x': "Age", 'y': "No. of Users"},
